@@ -4,3 +4,4 @@
 cache
 upload
 *.log
+LogonTracerEnv/*
