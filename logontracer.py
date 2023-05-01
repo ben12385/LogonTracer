@@ -19,6 +19,7 @@ from functools import wraps
 from logging import getLogger
 from logging.config import dictConfig
 from ssl import create_default_context
+from multiprocessing import Process
 
 try:
     from lxml import etree
