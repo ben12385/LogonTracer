@@ -51,7 +51,7 @@ except ImportError:
     has_changefinder = False
 
 try:
-    from flask import Flask, render_template, request, redirect, session
+    from flask import Flask, render_template, request, redirect, session, url_for
     has_flask = True
 except ImportError:
     has_flask = False
@@ -571,7 +571,7 @@ def load_user(user_id):
 
 @login_manager.unauthorized_handler
 def unauthorized():
-    return redirect('/login')
+    return redirect(url_for("login"))
 
 # Web application logging decorater
 def http_request_logging(f):
@@ -606,7 +606,7 @@ def login_required(role="ANY"):
 @http_request_logging
 def login():
     if current_user.is_authenticated:
-        return redirect('/')
+        return redirect(url_for("index"))
 
     session.permanent = True
     session["case"] = CASE_NAME
@@ -625,7 +625,7 @@ def login():
             user = User.query.filter_by(username=username).first()
             logger.info("[+] login user {0}.".format(username))
             login_user(user, remember=remember)
-            return redirect('/')
+            return redirect(url_for("index"))
         except:
             logger.error("[!] login failed user {0}.".format(username))
             return render_template('login.html', form=form, messages='<div class="alert alert-danger" role="alert">Invalid username or password.</div>')
@@ -664,7 +664,7 @@ def signup():
 
         create_neo4j_user(service, username, password, role_neo4j)
 
-        return redirect('/')
+        return redirect(url_for("index"))
     else:
         return render_template('signup.html', form=form)
 
@@ -708,7 +708,7 @@ def setting():
 
         session["password"] = password
 
-        return redirect('/')
+        return redirect(url_for("index"))
     else:
         return render_template('setting.html', form=form)
 
@@ -719,7 +719,7 @@ def setting():
 @login_required(role="ANY")
 def logout():
     logout_user()
-    return redirect('/login')
+    return redirect(url_for("login"))
 
 
 # Web application create case
@@ -783,7 +783,7 @@ def changecase():
     if request.method == "POST":
         case_name = request.form.get('caseName')
         if not re.search(r"\A[0-9a-zA-Z]{2,20}\Z", case_name):
-            return redirect('/')
+            return redirect(url_for("index"))
 
         session["case"] = case_name
 
@@ -799,7 +799,7 @@ def changecase_t():
     if request.method == "POST":
         case_name = request.form.get('caseName')
         if not re.search(r"\A[0-9a-zA-Z]{2,20}\Z", case_name):
-            return redirect('/')
+            return redirect(url_for("index"))
 
         session["case"] = case_name
 
