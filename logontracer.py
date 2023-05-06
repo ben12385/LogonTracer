@@ -1675,6 +1675,9 @@ def parse_evtx(evtx_list, case):
         event_set = pd.DataFrame(index=[], columns=["eventid", "ipaddress", "username", "logintype", "status", "authname", "date"])
         count_set = pd.DataFrame(index=[], columns=["dates", "eventid", "username"])
         ml_frame = pd.DataFrame(index=[], columns=["date", "user", "host", "id"])
+        event_set_list = list()
+        ml_frame_list = list()
+        count_series_list = list()
         username_set = []
         domain_set = []
         admins = []
@@ -1955,17 +1958,52 @@ def parse_evtx(evtx_list, case):
                     if username != "-" and username != "anonymous logon" and ipaddress != "::1" and ipaddress != "127.0.0.1" and (ipaddress != "-" or hostname != "-"):
                         # generate pandas series
                         if ipaddress != "-":
+                            event_series = {
+                                "eventid": eventid,
+                                "ipaddress": ipaddress,
+                                "username": username,
+                                "logintype": logintype,
+                                "status": status,
+                                "authname": authname,
+                                "date": int(stime.timestamp())
+                            }
+                            ml_series = {
+                                "date": etime.strftime("%Y-%m-%d %H:%M:%S"),
+                                "user": username,
+                                "host": ipaddress,
+                                "id": eventid
+                            }
                             event_series = pd.Series([eventid, ipaddress, username, logintype, status, authname, int(stime.timestamp())], index=event_set.columns)
                             ml_series = pd.Series([etime.strftime("%Y-%m-%d %H:%M:%S"), username, ipaddress, eventid],  index=ml_frame.columns)
                         else:
+                            event_series = {
+                                "eventid": eventid,
+                                "ipaddress": hostname,
+                                "username": username,
+                                "logintype": logintype,
+                                "status": status,
+                                "authname": authname,
+                                "date": int(stime.timestamp())
+                            }
+                            ml_series = {
+                                "date": etime.strftime("%Y-%m-%d %H:%M:%S"),
+                                "user": username,
+                                "host": hostname,
+                                "id": eventid
+                            }
                             event_series = pd.Series([eventid, hostname, username, logintype, status, authname, int(stime.timestamp())], index=event_set.columns)
                             ml_series = pd.Series([etime.strftime("%Y-%m-%d %H:%M:%S"), username, hostname, eventid],  index=ml_frame.columns)
-                        # append pandas series to dataframe
-                        event_set = event_set.append(event_series, ignore_index=True)
-                        ml_frame = ml_frame.append(ml_series, ignore_index=True)
+
+                        count_series = {
+                            "dates": stime.strftime("%Y-%m-%d %H:%M:%S"),
+                            "eventid": eventid,
+                            "username": username
+                        }
+
                         # print("%s,%i,%s,%s,%s,%s" % (eventid, ipaddress, username, comment, logintype))
-                        count_series = pd.Series([stime.strftime("%Y-%m-%d %H:%M:%S"), eventid, username], index=count_set.columns)
-                        count_set = count_set.append(count_series, ignore_index=True)
+                        event_set_list.append(event_series)
+                        ml_frame_list.append(ml_series)
+                        count_series_list.append(count_series)
                         # print("%s,%s" % (stime.strftime("%Y-%m-%d %H:%M:%S"), username))
 
                         if domain != "-":
@@ -2037,6 +2075,10 @@ def parse_evtx(evtx_list, case):
                     deletelog.append(domain_data[0].text)
                 else:
                     deletelog.append("-")
+
+    event_set = pd.concat([event_set, json.dumps(event_set_list)], convert_dates=False)
+    count_set = pd.concat([count_set, json.dumps(ml_frame_list)], convert_dates=False)
+    ml_frame = pd.concat([ml_frame, json.dumps(count_series_list)], convert_dates=False)
 
     logger.info("\n[+] Load finished.")
     logger.info("[+] Total Event log is {0}.".format(count))
