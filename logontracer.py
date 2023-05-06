@@ -4,7 +4,7 @@
 # LICENSE
 # https://github.com/JPCERTCC/LogonTracer/blob/master/LICENSE.txt
 #
-
+import time
 import os
 import re
 import sys
@@ -20,7 +20,6 @@ from functools import wraps
 from logging import getLogger
 from logging.config import dictConfig
 from ssl import create_default_context
-from multiprocessing import Process
 
 try:
     from lxml import etree
@@ -1733,6 +1732,8 @@ def parse_evtx(evtx_list, case):
             logger.error("[!] To date does not match format '%Y-%m-%dT%H:%M:%S'.")
             sys.exit(1)
 
+    startPerfTime = time.perf_counter_ns()
+
     for evtx_file in evtx_list:
         if args.evtx:
             with open(evtx_file, "rb") as fb:
@@ -1973,8 +1974,8 @@ def parse_evtx(evtx_list, case):
                                 "host": ipaddress,
                                 "id": eventid
                             }
-                            event_series = pd.Series([eventid, ipaddress, username, logintype, status, authname, int(stime.timestamp())], index=event_set.columns)
-                            ml_series = pd.Series([etime.strftime("%Y-%m-%d %H:%M:%S"), username, ipaddress, eventid],  index=ml_frame.columns)
+                            # event_series = pd.Series([eventid, ipaddress, username, logintype, status, authname, int(stime.timestamp())], index=event_set.columns)
+                            # ml_series = pd.Series([etime.strftime("%Y-%m-%d %H:%M:%S"), username, ipaddress, eventid],  index=ml_frame.columns)
                         else:
                             event_series = {
                                 "eventid": eventid,
@@ -1991,8 +1992,8 @@ def parse_evtx(evtx_list, case):
                                 "host": hostname,
                                 "id": eventid
                             }
-                            event_series = pd.Series([eventid, hostname, username, logintype, status, authname, int(stime.timestamp())], index=event_set.columns)
-                            ml_series = pd.Series([etime.strftime("%Y-%m-%d %H:%M:%S"), username, hostname, eventid],  index=ml_frame.columns)
+                            # event_series = pd.Series([eventid, hostname, username, logintype, status, authname, int(stime.timestamp())], index=event_set.columns)
+                            # ml_series = pd.Series([etime.strftime("%Y-%m-%d %H:%M:%S"), username, hostname, eventid],  index=ml_frame.columns)
 
                         count_series = {
                             "dates": stime.strftime("%Y-%m-%d %H:%M:%S"),
@@ -2076,9 +2077,17 @@ def parse_evtx(evtx_list, case):
                 else:
                     deletelog.append("-")
 
-    event_set = pd.concat([event_set, json.dumps(event_set_list)], convert_dates=False)
-    count_set = pd.concat([count_set, json.dumps(ml_frame_list)], convert_dates=False)
-    ml_frame = pd.concat([ml_frame, json.dumps(count_series_list)], convert_dates=False)
+    event_set = pd.read_json(json.dumps(event_set_list), convert_dates=False)
+    ml_frame = pd.read_json(json.dumps(ml_frame_list), convert_dates=False)
+    count_set = pd.read_json(json.dumps(count_series_list), convert_dates=False)
+
+
+    # event_set = pd.concat([event_set, event_set_list])
+    # ml_frame = pd.concat([count_set, ml_frame_list])
+    # count_set = pd.concat([ml_frame, count_series_list])
+
+
+    print(time.perf_counter_ns() - startPerfTime)
 
     logger.info("\n[+] Load finished.")
     logger.info("[+] Total Event log is {0}.".format(count))
